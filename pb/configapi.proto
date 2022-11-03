@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package pb;
+option go_package="./pb";
+
+import "google/protobuf/timestamp.proto";
+
+message Config {
+    string service = 1;
+    string config = 2;
+}
+
+message ConfigID {
+    int64 value = 1;
+}
+
+message UpdateConfig {
+    int64 id = 1;
+    optional string config = 2;
+}
+
+service ConfigService {
+    rpc Add (Config) returns (ConfigID){}
+    rpc Get (ConfigID) returns (ConfigResponse){}
+    rpc Delete (ConfigID) returns (DeleteResponse){}
+    rpc Update (UpdateConfig) returns (ConfigResponse){}
+}
+
+message ConfigResponse {
+    int64 id = 1;
+    Config config = 2;
+    google.protobuf.Timestamp created_at = 3;
+}
+
+message DeleteResponse {
+    bool success = 1;
+}
+
