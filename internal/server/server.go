@@ -64,6 +64,20 @@ func (s *Server) Delete(ctx context.Context, in *pb.ConfigID) (*pb.DeleteRespons
 }
 
 func (s *Server) Update(ctx context.Context, in *pb.UpdateConfig) (*pb.ConfigResponse, error) {
-	//...
-	return &pb.ConfigResponse{}, nil
+	rows, err := s.pool.Query(ctx, "UPDATE config SET config = $1 WHERE config_id = $2 RETURNING *",
+		in.GetConfig(), in.GetId())
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := pb.ConfigResponse{}
+	for rows.Next() {
+		if err := rows.Scan(&out.Id, &out.Config, &out.Config); err != nil {
+			log.Println(err)
+			return nil, err
+		}
+	}
+	return &out, nil
 }
