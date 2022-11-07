@@ -14,6 +14,10 @@ message ConfigID {
     int64 value = 1;
 }
 
+message Service  {
+    string service = 1;
+}
+
 message UpdateConfig {
     int64 id = 1;
     optional string config = 2;
@@ -22,14 +26,19 @@ message UpdateConfig {
 service ConfigService {
     rpc Add (Config) returns (ConfigID){}
     rpc Get (ConfigID) returns (ConfigResponse){}
-    rpc Delete (ConfigID) returns (DeleteResponse){}
+    //rpc GetUsingConf (Service) returns (ConfigResponse){}
+    //rpc GetAllServiceConf (Service) returns (stream ConfigResponse){}
+    rpc DeleteConf (ConfigID) returns (DeleteResponse){}
+    //rpc DeleteService (Service) returns (DeleteResponse){}
     rpc Update (UpdateConfig) returns (ConfigResponse){}
 }
 
 message ConfigResponse {
     int64 id = 1;
     Config config = 2;
-    google.protobuf.Timestamp created_at = 3;
+    int64 version = 3;
+    bool in_use = 4;
+    google.protobuf.Timestamp created_at = 5;
 }
 
 message DeleteResponse {

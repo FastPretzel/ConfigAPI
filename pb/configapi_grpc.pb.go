@@ -24,7 +24,10 @@ const _ = grpc.SupportPackageIsVersion7
 type ConfigServiceClient interface {
 	Add(ctx context.Context, in *Config, opts ...grpc.CallOption) (*ConfigID, error)
 	Get(ctx context.Context, in *ConfigID, opts ...grpc.CallOption) (*ConfigResponse, error)
-	Delete(ctx context.Context, in *ConfigID, opts ...grpc.CallOption) (*DeleteResponse, error)
+	// rpc GetUsingConf (Service) returns (ConfigResponse){}
+	// rpc GetAllServiceConf (Service) returns (stream ConfigResponse){}
+	DeleteConf(ctx context.Context, in *ConfigID, opts ...grpc.CallOption) (*DeleteResponse, error)
+	// rpc DeleteService (Service) returns (DeleteResponse){}
 	Update(ctx context.Context, in *UpdateConfig, opts ...grpc.CallOption) (*ConfigResponse, error)
 }
 
@@ -54,9 +57,9 @@ func (c *configServiceClient) Get(ctx context.Context, in *ConfigID, opts ...grp
 	return out, nil
 }
 
-func (c *configServiceClient) Delete(ctx context.Context, in *ConfigID, opts ...grpc.CallOption) (*DeleteResponse, error) {
+func (c *configServiceClient) DeleteConf(ctx context.Context, in *ConfigID, opts ...grpc.CallOption) (*DeleteResponse, error) {
 	out := new(DeleteResponse)
-	err := c.cc.Invoke(ctx, "/pb.ConfigService/Delete", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/pb.ConfigService/DeleteConf", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +81,10 @@ func (c *configServiceClient) Update(ctx context.Context, in *UpdateConfig, opts
 type ConfigServiceServer interface {
 	Add(context.Context, *Config) (*ConfigID, error)
 	Get(context.Context, *ConfigID) (*ConfigResponse, error)
-	Delete(context.Context, *ConfigID) (*DeleteResponse, error)
+	// rpc GetUsingConf (Service) returns (ConfigResponse){}
+	// rpc GetAllServiceConf (Service) returns (stream ConfigResponse){}
+	DeleteConf(context.Context, *ConfigID) (*DeleteResponse, error)
+	// rpc DeleteService (Service) returns (DeleteResponse){}
 	Update(context.Context, *UpdateConfig) (*ConfigResponse, error)
 	mustEmbedUnimplementedConfigServiceServer()
 }
@@ -93,8 +99,8 @@ func (UnimplementedConfigServiceServer) Add(context.Context, *Config) (*ConfigID
 func (UnimplementedConfigServiceServer) Get(context.Context, *ConfigID) (*ConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedConfigServiceServer) Delete(context.Context, *ConfigID) (*DeleteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+func (UnimplementedConfigServiceServer) DeleteConf(context.Context, *ConfigID) (*DeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteConf not implemented")
 }
 func (UnimplementedConfigServiceServer) Update(context.Context, *UpdateConfig) (*ConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
@@ -148,20 +154,20 @@ func _ConfigService_Get_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ConfigService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _ConfigService_DeleteConf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ConfigID)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConfigServiceServer).Delete(ctx, in)
+		return srv.(ConfigServiceServer).DeleteConf(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/pb.ConfigService/Delete",
+		FullMethod: "/pb.ConfigService/DeleteConf",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConfigServiceServer).Delete(ctx, req.(*ConfigID))
+		return srv.(ConfigServiceServer).DeleteConf(ctx, req.(*ConfigID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -200,8 +206,8 @@ var ConfigService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ConfigService_Get_Handler,
 		},
 		{
-			MethodName: "Delete",
-			Handler:    _ConfigService_Delete_Handler,
+			MethodName: "DeleteConf",
+			Handler:    _ConfigService_DeleteConf_Handler,
 		},
 		{
 			MethodName: "Update",
