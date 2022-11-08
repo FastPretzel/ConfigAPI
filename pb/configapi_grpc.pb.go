@@ -24,10 +24,10 @@ const _ = grpc.SupportPackageIsVersion7
 type ConfigServiceClient interface {
 	Add(ctx context.Context, in *Config, opts ...grpc.CallOption) (*ConfigID, error)
 	Get(ctx context.Context, in *ConfigID, opts ...grpc.CallOption) (*ConfigResponse, error)
-	// rpc GetUsingConf (Service) returns (ConfigResponse){}
-	// rpc GetAllServiceConf (Service) returns (stream ConfigResponse){}
+	GetUsingConf(ctx context.Context, in *Service, opts ...grpc.CallOption) (*ConfigResponse, error)
+	GetAllServiceConf(ctx context.Context, in *Service, opts ...grpc.CallOption) (ConfigService_GetAllServiceConfClient, error)
 	DeleteConf(ctx context.Context, in *ConfigID, opts ...grpc.CallOption) (*DeleteResponse, error)
-	// rpc DeleteService (Service) returns (DeleteResponse){}
+	DeleteService(ctx context.Context, in *Service, opts ...grpc.CallOption) (*DeleteResponse, error)
 	Update(ctx context.Context, in *UpdateConfig, opts ...grpc.CallOption) (*ConfigResponse, error)
 }
 
@@ -57,9 +57,59 @@ func (c *configServiceClient) Get(ctx context.Context, in *ConfigID, opts ...grp
 	return out, nil
 }
 
+func (c *configServiceClient) GetUsingConf(ctx context.Context, in *Service, opts ...grpc.CallOption) (*ConfigResponse, error) {
+	out := new(ConfigResponse)
+	err := c.cc.Invoke(ctx, "/pb.ConfigService/GetUsingConf", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configServiceClient) GetAllServiceConf(ctx context.Context, in *Service, opts ...grpc.CallOption) (ConfigService_GetAllServiceConfClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ConfigService_ServiceDesc.Streams[0], "/pb.ConfigService/GetAllServiceConf", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &configServiceGetAllServiceConfClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type ConfigService_GetAllServiceConfClient interface {
+	Recv() (*ConfigResponse, error)
+	grpc.ClientStream
+}
+
+type configServiceGetAllServiceConfClient struct {
+	grpc.ClientStream
+}
+
+func (x *configServiceGetAllServiceConfClient) Recv() (*ConfigResponse, error) {
+	m := new(ConfigResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *configServiceClient) DeleteConf(ctx context.Context, in *ConfigID, opts ...grpc.CallOption) (*DeleteResponse, error) {
 	out := new(DeleteResponse)
 	err := c.cc.Invoke(ctx, "/pb.ConfigService/DeleteConf", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configServiceClient) DeleteService(ctx context.Context, in *Service, opts ...grpc.CallOption) (*DeleteResponse, error) {
+	out := new(DeleteResponse)
+	err := c.cc.Invoke(ctx, "/pb.ConfigService/DeleteService", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -81,10 +131,10 @@ func (c *configServiceClient) Update(ctx context.Context, in *UpdateConfig, opts
 type ConfigServiceServer interface {
 	Add(context.Context, *Config) (*ConfigID, error)
 	Get(context.Context, *ConfigID) (*ConfigResponse, error)
-	// rpc GetUsingConf (Service) returns (ConfigResponse){}
-	// rpc GetAllServiceConf (Service) returns (stream ConfigResponse){}
+	GetUsingConf(context.Context, *Service) (*ConfigResponse, error)
+	GetAllServiceConf(*Service, ConfigService_GetAllServiceConfServer) error
 	DeleteConf(context.Context, *ConfigID) (*DeleteResponse, error)
-	// rpc DeleteService (Service) returns (DeleteResponse){}
+	DeleteService(context.Context, *Service) (*DeleteResponse, error)
 	Update(context.Context, *UpdateConfig) (*ConfigResponse, error)
 	mustEmbedUnimplementedConfigServiceServer()
 }
@@ -99,8 +149,17 @@ func (UnimplementedConfigServiceServer) Add(context.Context, *Config) (*ConfigID
 func (UnimplementedConfigServiceServer) Get(context.Context, *ConfigID) (*ConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
+func (UnimplementedConfigServiceServer) GetUsingConf(context.Context, *Service) (*ConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUsingConf not implemented")
+}
+func (UnimplementedConfigServiceServer) GetAllServiceConf(*Service, ConfigService_GetAllServiceConfServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetAllServiceConf not implemented")
+}
 func (UnimplementedConfigServiceServer) DeleteConf(context.Context, *ConfigID) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteConf not implemented")
+}
+func (UnimplementedConfigServiceServer) DeleteService(context.Context, *Service) (*DeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteService not implemented")
 }
 func (UnimplementedConfigServiceServer) Update(context.Context, *UpdateConfig) (*ConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
@@ -154,6 +213,45 @@ func _ConfigService_Get_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConfigService_GetUsingConf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Service)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServiceServer).GetUsingConf(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.ConfigService/GetUsingConf",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServiceServer).GetUsingConf(ctx, req.(*Service))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConfigService_GetAllServiceConf_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Service)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ConfigServiceServer).GetAllServiceConf(m, &configServiceGetAllServiceConfServer{stream})
+}
+
+type ConfigService_GetAllServiceConfServer interface {
+	Send(*ConfigResponse) error
+	grpc.ServerStream
+}
+
+type configServiceGetAllServiceConfServer struct {
+	grpc.ServerStream
+}
+
+func (x *configServiceGetAllServiceConfServer) Send(m *ConfigResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 func _ConfigService_DeleteConf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ConfigID)
 	if err := dec(in); err != nil {
@@ -168,6 +266,24 @@ func _ConfigService_DeleteConf_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ConfigServiceServer).DeleteConf(ctx, req.(*ConfigID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConfigService_DeleteService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Service)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServiceServer).DeleteService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.ConfigService/DeleteService",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServiceServer).DeleteService(ctx, req.(*Service))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -206,14 +322,28 @@ var ConfigService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ConfigService_Get_Handler,
 		},
 		{
+			MethodName: "GetUsingConf",
+			Handler:    _ConfigService_GetUsingConf_Handler,
+		},
+		{
 			MethodName: "DeleteConf",
 			Handler:    _ConfigService_DeleteConf_Handler,
+		},
+		{
+			MethodName: "DeleteService",
+			Handler:    _ConfigService_DeleteService_Handler,
 		},
 		{
 			MethodName: "Update",
 			Handler:    _ConfigService_Update_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "GetAllServiceConf",
+			Handler:       _ConfigService_GetAllServiceConf_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "pb/configapi.proto",
 }

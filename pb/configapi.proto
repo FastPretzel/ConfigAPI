@@ -26,10 +26,10 @@ message UpdateConfig {
 service ConfigService {
     rpc Add (Config) returns (ConfigID){}
     rpc Get (ConfigID) returns (ConfigResponse){}
-    //rpc GetUsingConf (Service) returns (ConfigResponse){}
-    //rpc GetAllServiceConf (Service) returns (stream ConfigResponse){}
+    rpc GetUsingConf (Service) returns (ConfigResponse){}
+    rpc GetAllServiceConf (Service) returns (stream ConfigResponse){}
     rpc DeleteConf (ConfigID) returns (DeleteResponse){}
-    //rpc DeleteService (Service) returns (DeleteResponse){}
+    rpc DeleteService (Service) returns (DeleteResponse){}
     rpc Update (UpdateConfig) returns (ConfigResponse){}
 }
 

@@ -44,7 +44,6 @@ func (s *Server) Add(ctx context.Context, in *pb.Config) (*pb.ConfigID, error) {
 	return &pb.ConfigID{Value: confId}, nil
 }
 
-// func (s *Server) insertConfig(ctx context.Context,)
 const updateInUseQuery = `UPDATE config SET in_use = CASE WHEN config_id = $1 THEN TRUE ELSE FALSE END`
 
 const selectConfigByIdQuery = `SELECT config_id,name,config,version,in_use,created_at
@@ -68,8 +67,57 @@ func (s *Server) Get(ctx context.Context, in *pb.ConfigID) (*pb.ConfigResponse, 
 	return &out, nil
 }
 
+const selectUsingConfQuery = `SELECT config_id,name,config,version,in_use,created_at
+		FROM config JOIN service ON config.service_id = service.service_id
+		WHERE name = $1 AND in_use = TRUE`
+
+func (s *Server) GetUsingConf(ctx context.Context, in *pb.Service) (*pb.ConfigResponse, error) {
+	t := time.Time{}
+	out := pb.ConfigResponse{Config: &pb.Config{}}
+
+	if err := s.pool.QueryRow(ctx, selectUsingConfQuery,
+		in.GetService()).Scan(&out.Id, &out.Config.Service, &out.Config.Config,
+		&out.Version, &out.InUse, &t); err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	out.CreatedAt = timestamppb.New(t)
+	return &out, nil
+}
+
+const selectAllServiceConfQuery = `SELECT config_id,name,config,version,in_use,created_at
+		FROM config JOIN service ON config.service_id = service.service_id
+		WHERE name = $1`
+
+func (s *Server) GetAllServiceConf(in *pb.Service, stream pb.ConfigService_GetAllServiceConfServer) error {
+	rows, err := s.pool.Query(context.Background(), selectAllServiceConfQuery, in.GetService())
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer rows.Close()
+
+	t := time.Time{}
+	out := pb.ConfigResponse{Config: &pb.Config{}}
+	for rows.Next() {
+		if err := rows.Scan(&out.Id, &out.Config.Service, &out.Config.Config,
+			&out.Version, &out.InUse, &t); err != nil {
+			log.Println(err)
+			return err
+		}
+		out.CreatedAt = timestamppb.New(t)
+		if err := stream.Send(&out); err != nil {
+			log.Println(err)
+			return err
+		}
+	}
+	return nil
+}
+
+const deleteConfQuery = `DELETE FROM config WHERE config_id = $1`
+
 func (s *Server) DeleteConf(ctx context.Context, in *pb.ConfigID) (*pb.DeleteResponse, error) {
-	_, err := s.pool.Exec(ctx, "DELETE FROM config WHERE config_id = $1", in.GetValue())
+	_, err := s.pool.Exec(ctx, deleteConfQuery, in.GetValue())
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -77,23 +125,29 @@ func (s *Server) DeleteConf(ctx context.Context, in *pb.ConfigID) (*pb.DeleteRes
 	return &pb.DeleteResponse{Success: true}, nil
 }
 
-func (s *Server) Update(ctx context.Context, in *pb.UpdateConfig) (*pb.ConfigResponse, error) {
-	rows, err := s.pool.Query(ctx, "UPDATE config SET config = $1 WHERE config_id = $2 RETURNING *",
-		in.GetConfig(), in.GetId())
+const deleteServiceQuery = `DELETE FROM service WHERE name = $1`
+
+func (s *Server) DeleteService(ctx context.Context, in *pb.Service) (*pb.DeleteResponse, error) {
+	_, err := s.pool.Exec(ctx, deleteServiceQuery, in.GetService())
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	defer rows.Close()
+	return &pb.DeleteResponse{Success: true}, nil
+}
 
+const updateConfQuery = `UPDATE config SET config = $1 FROM service
+		WHERE service.service_id = config.service_id AND config_id = $2
+		RETURNING config_id,name,config,version,in_use,created_at`
+
+func (s *Server) Update(ctx context.Context, in *pb.UpdateConfig) (*pb.ConfigResponse, error) {
 	t := time.Time{}
 	out := pb.ConfigResponse{Config: &pb.Config{}}
-	for rows.Next() {
-		if err := rows.Scan(&out.Id, &out.Config.Service,
-			&out.Config.Config, &t); err != nil {
-			log.Println(err)
-			return nil, err
-		}
+	if err := s.pool.QueryRow(ctx, updateConfQuery,
+		in.GetConfig(), in.GetId()).Scan(&out.Id, &out.Config.Service,
+		&out.Config.Config, &out.Version, &out.InUse, &t); err != nil {
+		log.Println(err)
+		return nil, err
 	}
 	out.CreatedAt = timestamppb.New(t)
 	return &out, nil
