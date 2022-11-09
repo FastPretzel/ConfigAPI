@@ -26,6 +26,7 @@ type ConfigServiceClient interface {
 	Get(ctx context.Context, in *ConfigID, opts ...grpc.CallOption) (*ConfigResponse, error)
 	GetUsingConf(ctx context.Context, in *Service, opts ...grpc.CallOption) (*ConfigResponse, error)
 	GetAllServiceConf(ctx context.Context, in *Service, opts ...grpc.CallOption) (ConfigService_GetAllServiceConfClient, error)
+	Use(ctx context.Context, in *ConfigID, opts ...grpc.CallOption) (*ConfigResponse, error)
 	DeleteConf(ctx context.Context, in *ConfigID, opts ...grpc.CallOption) (*DeleteResponse, error)
 	DeleteService(ctx context.Context, in *Service, opts ...grpc.CallOption) (*DeleteResponse, error)
 	Update(ctx context.Context, in *UpdateConfig, opts ...grpc.CallOption) (*ConfigResponse, error)
@@ -98,6 +99,15 @@ func (x *configServiceGetAllServiceConfClient) Recv() (*ConfigResponse, error) {
 	return m, nil
 }
 
+func (c *configServiceClient) Use(ctx context.Context, in *ConfigID, opts ...grpc.CallOption) (*ConfigResponse, error) {
+	out := new(ConfigResponse)
+	err := c.cc.Invoke(ctx, "/pb.ConfigService/Use", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configServiceClient) DeleteConf(ctx context.Context, in *ConfigID, opts ...grpc.CallOption) (*DeleteResponse, error) {
 	out := new(DeleteResponse)
 	err := c.cc.Invoke(ctx, "/pb.ConfigService/DeleteConf", in, out, opts...)
@@ -133,6 +143,7 @@ type ConfigServiceServer interface {
 	Get(context.Context, *ConfigID) (*ConfigResponse, error)
 	GetUsingConf(context.Context, *Service) (*ConfigResponse, error)
 	GetAllServiceConf(*Service, ConfigService_GetAllServiceConfServer) error
+	Use(context.Context, *ConfigID) (*ConfigResponse, error)
 	DeleteConf(context.Context, *ConfigID) (*DeleteResponse, error)
 	DeleteService(context.Context, *Service) (*DeleteResponse, error)
 	Update(context.Context, *UpdateConfig) (*ConfigResponse, error)
@@ -154,6 +165,9 @@ func (UnimplementedConfigServiceServer) GetUsingConf(context.Context, *Service) 
 }
 func (UnimplementedConfigServiceServer) GetAllServiceConf(*Service, ConfigService_GetAllServiceConfServer) error {
 	return status.Errorf(codes.Unimplemented, "method GetAllServiceConf not implemented")
+}
+func (UnimplementedConfigServiceServer) Use(context.Context, *ConfigID) (*ConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Use not implemented")
 }
 func (UnimplementedConfigServiceServer) DeleteConf(context.Context, *ConfigID) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteConf not implemented")
@@ -252,6 +266,24 @@ func (x *configServiceGetAllServiceConfServer) Send(m *ConfigResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _ConfigService_Use_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfigID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServiceServer).Use(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.ConfigService/Use",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServiceServer).Use(ctx, req.(*ConfigID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ConfigService_DeleteConf_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ConfigID)
 	if err := dec(in); err != nil {
@@ -324,6 +356,10 @@ var ConfigService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUsingConf",
 			Handler:    _ConfigService_GetUsingConf_Handler,
+		},
+		{
+			MethodName: "Use",
+			Handler:    _ConfigService_Use_Handler,
 		},
 		{
 			MethodName: "DeleteConf",

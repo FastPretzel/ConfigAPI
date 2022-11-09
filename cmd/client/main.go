@@ -21,6 +21,7 @@ func main() {
 	c := pb.NewConfigServiceClient(conn)
 	log.Printf("created client: %v", c)
 
+	fmt.Println("------------------------------------ADD------------------------------------")
 	log.Println("exec add")
 	idx, err := c.Add(context.Background(), &pb.Config{Service: "k8s",
 		Config: `{"key1": "value1","key2": "value2"}`})
@@ -29,8 +30,18 @@ func main() {
 	}
 	fmt.Printf("Add response: %v\n", idx.GetValue())
 
+	fmt.Println("------------------------------------USE------------------------------------")
+	log.Println("exec use")
+	out, err := c.Use(context.Background(), &pb.ConfigID{Value: idx.GetValue()})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Use response: %v, %v, %v, %v, %v, %v\n", out.GetId(),
+		out.GetConfig().Service, out.GetConfig().Config, out.GetVersion(), out.GetInUse(), out.GetCreatedAt().AsTime())
+
+	fmt.Println("------------------------------------GET------------------------------------")
 	log.Println("exec get")
-	out, err := c.Get(context.Background(), &pb.ConfigID{Value: idx.GetValue()})
+	out, err = c.Get(context.Background(), &pb.ConfigID{Value: idx.GetValue()})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,27 +73,29 @@ func main() {
 	fmt.Printf("GetUsing response: %v, %v, %v, %v, %v, %v\n", out.GetId(),
 		out.GetConfig().Service, out.GetConfig().Config, out.GetVersion(), out.GetInUse(), out.GetCreatedAt().AsTime())
 
+	fmt.Println("------------------------------------UPDATE------------------------------------")
 	log.Println("exec update")
 	update := `{"key1": "VALUE1","key2": "VALUE2"}`
-	out, err = c.Update(context.Background(), &pb.UpdateConfig{Id: 1, Config: &update})
+	out, err = c.Update(context.Background(), &pb.UpdateConfig{Id: idx.GetValue(), Config: &update})
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("Update response: %v, %v, %v, %v, %v, %v\n", out.GetId(),
 		out.GetConfig().Service, out.GetConfig().Config, out.GetVersion(), out.GetInUse(), out.GetCreatedAt().AsTime())
 
+	fmt.Println("------------------------------------DELETE------------------------------------")
 	log.Println("exec delete")
-	outDelete, err := c.DeleteConf(context.Background(), &pb.ConfigID{Value: 1})
+	outDelete, err := c.DeleteConf(context.Background(), &pb.ConfigID{Value: idx.GetValue()})
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("DeleteConf response: %v\n", outDelete.GetSuccess())
 
-	log.Println("exec deleteService")
-	outDelete, err = c.DeleteService(context.Background(), &pb.Service{Service: "k8s"})
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("DeleteService response: %v\n", outDelete.GetSuccess())
-	fmt.Println("END")
+	//log.Println("exec deleteService")
+	//outDelete, err = c.DeleteService(context.Background(), &pb.Service{Service: "k8s"})
+	//if err != nil {
+	//log.Fatal(err)
+	//}
+	//fmt.Printf("DeleteService response: %v\n", outDelete.GetSuccess())
+	log.Println("--------------------------END--------------------------")
 }
