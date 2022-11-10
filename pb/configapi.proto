@@ -45,4 +45,3 @@ message ConfigResponse {
 message DeleteResponse {
     bool success = 1;
 }
-

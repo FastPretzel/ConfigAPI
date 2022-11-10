@@ -9,8 +9,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const updateInUseQuery = `UPDATE config SET in_use = CASE WHEN config_id = $1 THEN TRUE ELSE FALSE END`
-
 const selectConfigByIdQuery = `SELECT config_id,name,config,version,in_use,created_at
 		FROM config JOIN service ON config.service_id = service.service_id
 		WHERE config_id = $1`

@@ -18,8 +18,6 @@ func main() {
 	}
 	defer pool.Close()
 
-	//repo := repository.NewRepository(pool)
-
 	listen, err := net.Listen("tcp", ":5000")
 	if err != nil {
 		log.Fatal(err)
